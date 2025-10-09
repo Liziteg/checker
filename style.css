@@ -1,3 +1,7 @@
+/*
+ * Глобальные переменные темы и базовые стили страницы.
+ * Цвета собраны в одном месте, чтобы упростить кастомизацию.
+ */
 :root {
     color-scheme: light;
     --bg: #f6f7fb;
@@ -32,6 +36,10 @@ body {
     position: relative;
 }
 
+/*
+ * Кот-маскот размещается в отдельном слое поверх контента.
+ * Сцены подгружаются динамически и не блокируют взаимодействие с формой.
+ */
 .cat-mascot-root {
     position: absolute;
     inset: 0;
@@ -117,6 +125,17 @@ body {
     border-left-color: rgba(15, 23, 42, 0.86);
 }
 
+/* Вспомогательный класс для отображения только сообщения без иллюстрации */
+.cat-mascot--text-only {
+    align-items: center;
+    justify-content: center;
+    max-width: min(360px, 90vw);
+}
+
+.cat-mascot--text-only .cat-mascot__bubble::after {
+    display: none;
+}
+
 .cat-mascot--top-left {
     top: 32px;
     left: 24px;
@@ -171,6 +190,7 @@ body {
     }
 }
 
+/* Герой-блок и карточки с описанием продукта */
 .hero {
     padding: 48px 20px 36px;
     background: linear-gradient(145deg, #f6f7fb 0%, #eef1ff 100%);
@@ -251,6 +271,7 @@ body {
     font-size: 20px;
 }
 
+/* Основные контейнеры и карточки приложения */
 .container {
     flex: 1;
     width: min(960px, 100%);
@@ -296,6 +317,7 @@ body {
 }
 
 .field-group input[type="file"],
+/* Поля формы и управляющие элементы */
 .field-group input[type="text"] {
     width: 100%;
     padding: 12px 14px;
@@ -378,6 +400,7 @@ body {
     background: rgba(15, 23, 42, 0.05);
 }
 
+/* Системные сообщения и прогресс загрузки */
 .alert {
     padding: 14px 16px;
     border-radius: 12px;
@@ -485,6 +508,7 @@ body {
     background: rgba(14, 116, 204, 0.14);
 }
 
+/* Результирующая таблица с различиями */
 .table-wrapper {
     overflow-x: auto;
     border: 1px solid var(--surface-border);
@@ -542,6 +566,7 @@ body {
     font-style: italic;
 }
 
+/* Подвал с описанием политики безопасности */
 .footer {
     margin-top: auto;
     padding: 32px 16px 40px;

@@ -1,3 +1,4 @@
+// --- Константы с настройками обработки файлов ---------------------------------
 const MAX_FILE_SIZE_BYTES = 1024 * 1024 * 1024; // 1 ГБ
 const DEFAULT_KEY_HEADER = 'POLICY_NO';
 const RESERVED_COLUMN_NAMES = new Set(['__proto__', 'prototype', 'constructor']);
@@ -23,32 +24,13 @@ const REPORT_FORMATS = {
 };
 const DEFAULT_REPORT_FORMAT = 'xlsx';
 
+// --- Настройки блоков с котом-маскотом -----------------------------------------
 const LAST_SCENE_STORAGE_KEY = 'csv-check-pro:last-cat-scene';
+const CAT_SCENES_SOURCE = 'assets/cat_scenes/cat-scenes.json';
+const FALLBACK_CAT_MESSAGE = 'Добавьте новые сцены в каталог assets/cat_scenes, чтобы кот появлялся рядом с отчётами.';
+const DEFAULT_CAT_POSITION = 'cat-mascot--top-right';
 
-const CAT_SCENES = [
-    {
-        id: 'desk-analyst',
-        ariaLabel: 'Чёрный кот сидит рядом с ноутбуком и чашкой, следит за данными.',
-        image: 'assets/pixel_cat/cat_mascot.svg',
-        message: 'Слежу, чтобы графики не проседали, а метрики мурлыкали как надо. Если что — лапой по клавиатуре!',
-        positionClass: 'cat-mascot--top-right'
-    },
-    {
-        id: 'desk-guardian',
-        ariaLabel: 'Чёрный кот охраняет ноутбук и внимательно наблюдает за экраном.',
-        image: 'assets/pixel_cat/cat_mascot.svg',
-        message: 'Лиза ревьюит модель, Руслан фикстит баги, а я не пропускаю ни одного подозрительного файла.',
-        positionClass: 'cat-mascot--middle-left'
-    },
-    {
-        id: 'desk-coffee-break',
-        ariaLabel: 'Чёрный кот устроился на столе рядом с кружкой кофе и мерцающим монитором.',
-        image: 'assets/pixel_cat/cat_mascot.svg',
-        message: 'Данные загружены, кофе горячий, хвост держит баланс. Готов выдать отчёт по первому требованию.',
-        positionClass: 'cat-mascot--bottom-right cat-mascot--mirrored'
-    }
-];
-
+// --- Переменные для DOM-элементов ----------------------------------------------
 let form;
 let fileInputA;
 let fileInputB;
@@ -65,11 +47,13 @@ let downloadReportButton;
 let downloadDetailedReportButton;
 let loadingIndicator;
 
+// --- Состояние последнего сравнения --------------------------------------------
 let lastDifferences = [];
 let lastFileNameA = '';
 let lastFileNameB = '';
 let lastKeyFieldName = '';
 
+// --- Инициализация браузерной логики -------------------------------------------
 if (typeof document !== 'undefined') {
     form = document.getElementById('compare-form');
     fileInputA = document.getElementById('fileA');
@@ -87,9 +71,13 @@ if (typeof document !== 'undefined') {
     downloadDetailedReportButton = document.getElementById('download-detailed-report');
     loadingIndicator = document.getElementById('loading-indicator');
 
+    // Приводим инпуты в соответствие с выбранным форматом и подключаем кота.
     initializeFormatHandling();
-    initializeCatMascot();
+    initializeCatMascot().catch((error) => {
+        console.error('Не удалось инициализировать сцену с котом:', error);
+    });
 
+    // Основная обработка отправки формы сравнения.
     form?.addEventListener('submit', async (event) => {
         event.preventDefault();
         hideError();
@@ -155,6 +143,7 @@ if (typeof document !== 'undefined') {
         }
     });
 
+    // Обработчик скачивания сводного отчёта.
     downloadReportButton?.addEventListener('click', () => {
         if (!lastDifferences.length) {
             return;
@@ -166,6 +155,7 @@ if (typeof document !== 'undefined') {
         }
     });
 
+    // Обработчик скачивания подробного отчёта.
     downloadDetailedReportButton?.addEventListener('click', () => {
         if (!lastDifferences.length) {
             return;
@@ -434,17 +424,95 @@ function readExcelFile(file) {
     });
 }
 
-function initializeCatMascot() {
+/**
+ * Загрузить и отобразить сцену с котом-маскотом.
+ * @returns {Promise<void>}
+ */
+async function initializeCatMascot() {
     const root = document.getElementById('cat-mascot-root');
-    if (!root || !CAT_SCENES.length) {
+    if (!root) {
         return;
     }
 
-    let availableScenes = CAT_SCENES;
+    const scenes = await loadCatScenes(CAT_SCENES_SOURCE);
+    if (!scenes.length) {
+        renderCatPlaceholder(root);
+        return;
+    }
+
+    const scene = selectNextScene(scenes);
+    if (!scene) {
+        renderCatPlaceholder(root);
+        return;
+    }
+
+    renderCatScene(root, scene);
+}
+
+/**
+ * Получить список сцен из JSON-файла и отфильтровать некорректные записи.
+ * @param {string} source
+ * @returns {Promise<Array<{id:string,ariaLabel:string,image:string,message:string,positionClass:string}>>}
+ */
+async function loadCatScenes(source) {
+    if (typeof fetch === 'undefined') {
+        return [];
+    }
+    try {
+        const response = await fetch(source, { cache: 'no-store' });
+        if (!response.ok) {
+            return [];
+        }
+        const payload = await response.json();
+        if (!Array.isArray(payload)) {
+            return [];
+        }
+        return payload
+            .map((scene) => sanitizeScene(scene))
+            .filter((scene) => Boolean(scene && scene.image && scene.message));
+    } catch (error) {
+        console.warn('Не удалось загрузить сцены с котом:', error);
+        return [];
+    }
+}
+
+/**
+ * Очистить и нормализовать данные сцены перед отображением.
+ * @param {any} scene
+ */
+function sanitizeScene(scene) {
+    if (!scene || typeof scene !== 'object') {
+        return null;
+    }
+    const fallbackId = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : `generated-${Date.now()}-${Math.random().toString(16).slice(2, 10)}`;
+    const id = typeof scene.id === 'string' && scene.id.trim() ? scene.id.trim() : fallbackId;
+    const ariaLabel = typeof scene.ariaLabel === 'string' && scene.ariaLabel.trim()
+        ? scene.ariaLabel.trim()
+        : 'Иллюстрация с котом-маскотом.';
+    const image = typeof scene.image === 'string' && scene.image.trim() ? scene.image.trim() : '';
+    const message = typeof scene.message === 'string' && scene.message.trim() ? scene.message.trim() : '';
+    const positionClass = typeof scene.positionClass === 'string' && scene.positionClass.trim()
+        ? scene.positionClass.trim()
+        : DEFAULT_CAT_POSITION;
+    return { id, ariaLabel, image, message, positionClass };
+}
+
+/**
+ * Выбрать сцену, избегая повторения предыдущей, если это возможно.
+ * @param {Array<{id:string,ariaLabel:string,image:string,message:string,positionClass:string}>} scenes
+ */
+function selectNextScene(scenes) {
+    if (!Array.isArray(scenes) || !scenes.length) {
+        return null;
+    }
+
+    let availableScenes = scenes;
     try {
         const previousSceneId = sessionStorage.getItem(LAST_SCENE_STORAGE_KEY);
-        if (previousSceneId && CAT_SCENES.length > 1) {
-            const filtered = CAT_SCENES.filter((scene) => scene.id !== previousSceneId);
+        if (previousSceneId && scenes.length > 1) {
+            const filtered = scenes.filter((scene) => scene.id !== previousSceneId);
             if (filtered.length) {
                 availableScenes = filtered;
             }
@@ -462,24 +530,53 @@ function initializeCatMascot() {
         console.warn('Не удалось сохранить данные в sessionStorage:', storageError);
     }
 
-    const wrapper = document.createElement('div');
-    wrapper.className = `cat-mascot ${scene.positionClass}`.trim();
+    return scene;
+}
 
-    const imageContainer = document.createElement('div');
-    imageContainer.className = 'cat-mascot__image';
-    const imageElement = document.createElement('img');
-    imageElement.src = scene.image;
-    imageElement.alt = scene.ariaLabel;
-    imageElement.loading = 'lazy';
-    imageElement.decoding = 'async';
-    imageElement.className = 'cat-mascot__illustration';
-    imageContainer.append(imageElement);
+/**
+ * Отрисовать сцену с котом, если доступно изображение.
+ * @param {HTMLElement} root
+ * @param {{id:string,ariaLabel:string,image:string,message:string,positionClass:string}} scene
+ */
+function renderCatScene(root, scene) {
+    const wrapper = document.createElement('div');
+    wrapper.className = ['cat-mascot', scene.positionClass].filter(Boolean).join(' ').trim();
+
+    if (scene.image) {
+        const imageContainer = document.createElement('div');
+        imageContainer.className = 'cat-mascot__image';
+        const imageElement = document.createElement('img');
+        imageElement.src = scene.image;
+        imageElement.alt = scene.ariaLabel;
+        imageElement.loading = 'lazy';
+        imageElement.decoding = 'async';
+        imageElement.className = 'cat-mascot__illustration';
+        imageContainer.append(imageElement);
+        wrapper.append(imageContainer);
+    } else {
+        wrapper.classList.add('cat-mascot--text-only');
+    }
 
     const bubble = document.createElement('div');
     bubble.className = 'cat-mascot__bubble';
     bubble.textContent = scene.message;
 
-    wrapper.append(imageContainer, bubble);
+    wrapper.append(bubble);
+    root.innerHTML = '';
+    root.append(wrapper);
+}
+
+/**
+ * Показать текстовый плейсхолдер, если подходящих сцен нет.
+ * @param {HTMLElement} root
+ */
+function renderCatPlaceholder(root) {
+    const wrapper = document.createElement('div');
+    wrapper.className = ['cat-mascot', 'cat-mascot--text-only', DEFAULT_CAT_POSITION].join(' ');
+    const bubble = document.createElement('div');
+    bubble.className = 'cat-mascot__bubble';
+    bubble.textContent = FALLBACK_CAT_MESSAGE;
+    wrapper.append(bubble);
     root.innerHTML = '';
     root.append(wrapper);
 }
@@ -510,6 +607,9 @@ function sanitizeRows(rows) {
         .filter((row) => Object.keys(row).length > 0);
 }
 
+/**
+ * Подготовить обработчики изменения формата файлов и очистки состояния.
+ */
 function initializeFormatHandling() {
     if (!tableFormatSelect || !fileInputA || !fileInputB) {
         return;
