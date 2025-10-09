@@ -44,7 +44,7 @@
   {
     "id": "report-ready",
     "ariaLabel": "Кот держит хвост трубой и готовится выдать отчёт.",
-    "image": "assets/cat_scenes/cat_mascot_keyboard.png",
+    "image": "assets/cat_scenes/cat_mascot_keyboard_v2.png",
     "message": "!Данные загружены, кофе горячий, хвост держит баланс. Готов выдать отчёт по первому требованию!",
     "positionClass": "cat-mascot--top-left"
   }
