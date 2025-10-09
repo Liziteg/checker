@@ -2,28 +2,28 @@
   {
     "id": "merge-comfort",
     "ariaLabel": "Кот одобрительно кивает, когда файлы успешно проходят ревью.",
-    "image": "assets/cat_scenes/merge-comfort.svg",
+    "image": "assets/cat_scenes/cat_mascot_medicine.png",
     "message": "Файлы сошлись — можно гладить. Не сошлись — готовьте баг-репорт и валерьянку.",
     "positionClass": "cat-mascot--top-left"
   },
   {
     "id": "crosswalk-join",
     "ariaLabel": "Кот осторожно переходит дорожку между таблицами данных.",
-    "image": "assets/cat_scenes/crosswalk-join.svg",
+    "image": "assets/cat_scenes/cat_mascot_JOIN.png",
     "message": "Перехожу дорогу только между таблицами — для честного inner join.",
     "positionClass": "cat-mascot--top-right"
   },
   {
     "id": "etl-ready",
     "ariaLabel": "Кот с чашкой кофе изучает чеклист по загрузкам данных.",
-    "image": "assets/cat_scenes/etl-ready.svg",
+    "image": "assets/cat_scenes/cat_mascot_ETL.png",
     "message": "ETL? Легко: Ем, Тестирую, Ладно — грузим. Остальное — по значениям.",
     "positionClass": "cat-mascot--middle-left"
   },
   {
     "id": "prod-guardian",
     "ariaLabel": "Кот серьёзно следит за стабильностью продакшена.",
-    "image": "assets/cat_scenes/prod-guardian.svg",
+    "image": "assets/cat_scenes/cat_mascot_jedai.png",
     "message": "Мой список правил прост. Первое — не ломать прод. Второе — гладить кота. Третье — смотри пункт один.",
     "positionClass": "cat-mascot--middle-right"
   },
