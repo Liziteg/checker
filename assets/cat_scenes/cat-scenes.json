@@ -30,7 +30,7 @@
   {
     "id": "metrics-purr",
     "ariaLabel": "Кот контролирует панели мониторинга и графики.",
-    "image": "assets/cat_scenes/cat_mascot_notebook_v2.png",
+    "image": "assets/cat_scenes/cat_mascot_notebook_v3.png",
     "message": "Слежу, чтобы графики не проседали, а метрики мурлыкали как надо. Если что — лапой по клавиатуре!",
     "positionClass": "cat-mascot--bottom-left"
   },
