@@ -1,0 +1,84 @@
+<svg width="320" height="320" viewBox="0 0 320 320" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Кот прячет клубок в коробке</title>
+  <desc id="desc">Чёрный кот хитро заглядывает из-за коробки, в которую спрятал клубок пряжи.</desc>
+  <style>
+    .shadow { fill: rgba(26, 22, 38, 0.2); }
+    .box { fill: #f1b972; stroke: #d8974b; stroke-width: 4; stroke-linejoin: round; }
+    .box-lid { fill: #f7c985; }
+    .box-label { fill: #ffffff; }
+    .fur-dark { fill: #1f1d2c; }
+    .fur-medium { fill: #29263a; }
+    .fur-light { fill: #34324a; }
+    .inner-ear { fill: #f6a6b8; opacity: 0.8; }
+    .eye-sclera { fill: #f8d779; }
+    .eye-pupil { fill: #111018; }
+    .eye-shine { fill: #ffffff; opacity: 0.85; }
+    .nose { fill: #f6a6b8; }
+    .whisker { stroke: #d8d6e6; stroke-width: 2.2; stroke-linecap: round; }
+    .line { fill: none; stroke: #15121f; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .yarn { fill: #ff6d7a; }
+    .tail { transform-box: fill-box; transform-origin: 20% 80%; animation: tail-hide 3.6s ease-in-out infinite; }
+    .head { transform-box: fill-box; transform-origin: 50% 82%; animation: head-peek 4s ease-in-out infinite; }
+    .blink { transform-box: fill-box; transform-origin: 50% 0%; animation: blink 6.4s ease-in-out infinite; }
+    .box { transform-box: fill-box; transform-origin: 50% 100%; animation: box-bounce 3.6s ease-in-out infinite; }
+    @keyframes tail-hide {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+    @keyframes head-peek {
+      0%, 100% { transform: translateY(-2px); }
+      50% { transform: translateY(4px); }
+    }
+    @keyframes blink {
+      0%, 60%, 62%, 100% { transform: scaleY(0); }
+      61% { transform: scaleY(1); }
+    }
+    @keyframes box-bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .tail, .head, .blink, .box { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+    }
+  </style>
+  <ellipse class="shadow" cx="164" cy="272" rx="110" ry="28" />
+  <g class="box" transform="translate(88 188)">
+    <rect class="box-lid" x="0" y="0" width="144" height="26" rx="10" />
+    <rect x="0" y="22" width="144" height="80" rx="12" />
+    <rect class="box-label" x="32" y="42" width="80" height="28" rx="6" />
+    <circle class="yarn" cx="112" cy="68" r="12" />
+  </g>
+  <g class="cat">
+    <path class="tail fur-medium" d="M238 214c18 12 26 34 20 48-6 16-24 26-40 18-12-6-10-18-2-24s16-12 12-20c-4-10 0-16 10-22z" />
+    <g class="head head">
+      <path class="fur-medium" d="M120 140c6-26 34-48 62-48s54 22 58 48c2 22-8 48-22 60-12 10-26 14-40 14-16 0-28-4-40-14-16-12-24-36-18-60z" />
+      <path class="fur-dark" d="M134 108c-16 6-30 28-26 56 6-18 20-26 30-30 10-4 12-20-4-26z" opacity="0.55" />
+      <path class="fur-dark" d="M212 108c16 6 30 28 26 56-6-18-20-26-30-30-10-4-12-20 4-26z" opacity="0.55" />
+      <path class="inner-ear" d="M140 116c-8 4-18 22-18 34 10-6 20-14 26-20 4-4-2-10-8-14z" />
+      <path class="inner-ear" d="M206 116c8 4 18 22 18 34-10-6-20-14-26-20-4-4 2-10 8-14z" />
+      <g class="face">
+        <g class="eye" transform="translate(144 156)">
+          <circle class="eye-sclera" cx="0" cy="0" r="20" />
+          <ellipse class="eye-pupil" cx="-2" cy="4" rx="8" ry="10" />
+          <ellipse class="eye-shine" cx="-6" cy="-6" rx="6" ry="4" />
+          <rect class="fur-medium blink" x="-22" y="-20" width="44" height="20" rx="10" />
+        </g>
+        <g class="eye" transform="translate(200 156)">
+          <circle class="eye-sclera" cx="0" cy="0" r="20" />
+          <ellipse class="eye-pupil" cx="2" cy="4" rx="8" ry="10" />
+          <ellipse class="eye-shine" cx="6" cy="-6" rx="6" ry="4" />
+          <rect class="fur-medium blink" x="-22" y="-20" width="44" height="20" rx="10" />
+        </g>
+        <ellipse class="nose" cx="172" cy="176" rx="8" ry="6" />
+        <path class="line" d="M172 182v10" />
+        <path class="line" d="M160 192c6 6 14 6 20 0" />
+        <path class="whisker" d="M144 174c12 2 22 6 30 10" />
+        <path class="whisker" d="M204 174c-12 2-22 6-30 10" />
+      </g>
+    </g>
+    <g class="paws">
+      <path class="fur-light" d="M138 230c-8 10-24 10-32 2-10-8-4-24 10-28 12-4 26 6 26 14 0 4-2 8-4 12z" />
+      <path class="fur-light" d="M220 226c8 10 24 10 32 2 10-8 4-24-10-28-12-4-26 6-26 14 0 4 2 8 4 12z" />
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,93 @@
+<svg width="320" height="320" viewBox="0 0 320 320" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Кот греется на клавиатуре</title>
+  <desc id="desc">Чёрный кот с янтарными глазами свернулся на тёплой клавиатуре и довольно улыбается, хвост медленно покачивается.</desc>
+  <style>
+    .shadow { fill: rgba(26, 22, 38, 0.18); }
+    .keyboard-base { fill: #2f3547; }
+    .keyboard-top { fill: #3d445b; }
+    .keyboard-keys rect { fill: #4a516a; }
+    .fur-dark { fill: #1f1d2c; }
+    .fur-medium { fill: #29263a; }
+    .fur-light { fill: #34324a; }
+    .inner-ear { fill: #f6a6b8; opacity: 0.8; }
+    .eye-sclera { fill: #f8d779; }
+    .eye-shine { fill: #ffffff; opacity: 0.9; }
+    .nose { fill: #f6a6b8; }
+    .whisker { stroke: #d8d6e6; stroke-width: 2.4; stroke-linecap: round; }
+    .line { fill: none; stroke: #15121f; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .tail { transform-box: fill-box; transform-origin: 20% 70%; animation: tail-sway 3.8s ease-in-out infinite; }
+    .head { transform-box: fill-box; transform-origin: 50% 80%; animation: head-nod 5s ease-in-out infinite; }
+    .blink { transform-box: fill-box; transform-origin: 50% 0%; animation: blink 8s ease-in-out infinite; }
+    .purr { transform-box: fill-box; transform-origin: 50% 50%; animation: purr 3s ease-in-out infinite; }
+    @keyframes tail-sway {
+      0%, 100% { transform: rotate(4deg); }
+      50% { transform: rotate(-6deg); }
+    }
+    @keyframes head-nod {
+      0%, 100% { transform: rotate(-2deg); }
+      50% { transform: rotate(2deg); }
+    }
+    @keyframes blink {
+      0%, 80%, 82%, 100% { transform: scaleY(0); }
+      81% { transform: scaleY(1); }
+    }
+    @keyframes purr {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-3px); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .tail, .head, .blink, .purr { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+    }
+  </style>
+  <ellipse class="shadow" cx="162" cy="262" rx="114" ry="28" />
+  <g class="keyboard">
+    <rect class="keyboard-base" x="48" y="222" width="232" height="42" rx="12" />
+    <rect class="keyboard-top" x="60" y="234" width="208" height="14" rx="6" />
+    <g class="keyboard-keys">
+      <rect x="64" y="236" width="28" height="8" rx="3" />
+      <rect x="98" y="236" width="28" height="8" rx="3" />
+      <rect x="132" y="236" width="28" height="8" rx="3" />
+      <rect x="166" y="236" width="28" height="8" rx="3" />
+      <rect x="200" y="236" width="28" height="8" rx="3" />
+      <rect x="234" y="236" width="28" height="8" rx="3" />
+    </g>
+  </g>
+  <g class="cat">
+    <path class="tail fur-medium" d="M246 188c16 12 18 34 8 48-10 14-32 18-42 4-6-8-2-20 8-24s12-14 8-22c-4-8 6-10 18-6z" />
+    <g class="body">
+      <path class="fur-medium" d="M86 160c8-28 50-48 94-44 46 4 82 30 82 72s-38 64-92 68c-54 4-104-32-102-74 2-16 10-20 18-22z" />
+      <path class="fur-light" d="M118 224c10 16 34 28 56 28 22 0 44-12 54-26-6 22-34 42-64 42-30 0-60-18-72-42 10 4 18 4 26-2z" opacity="0.5" />
+    </g>
+    <g class="paws purr">
+      <path class="fur-light" d="M126 250c-8 8-26 8-34 0-8-8 2-22 14-24s24 6 26 14c2 6-4 8-6 10z" />
+      <path class="fur-light" d="M206 250c8 8 26 8 34 0 8-8-2-22-14-24s-24 6-26 14c-2 6 4 8 6 10z" />
+    </g>
+    <g class="head head--rest head">
+      <path class="fur-medium" d="M108 126c2-26 28-54 60-54s58 28 60 54c2 22-8 48-22 58-12 10-24 14-38 14s-26-4-36-12c-18-12-26-36-24-60z" />
+      <path class="fur-light" d="M160 100c-28 0-52 24-52 56 0 30 24 48 52 48s52-18 52-48c0-32-24-56-52-56z" opacity="0.35" />
+      <path class="fur-dark" d="M132 86c-16 4-32 32-28 64 6-18 20-30 34-34 10-4 10-20-6-30z" opacity="0.5" />
+      <path class="fur-dark" d="M216 86c16 4 32 32 28 64-6-18-20-30-34-34-10-4-10-20 6-30z" opacity="0.5" />
+      <path class="inner-ear" d="M136 96c-8 4-18 24-18 40 10-6 20-16 26-22 4-4 0-14-8-18z" />
+      <path class="inner-ear" d="M208 96c8 4 18 24 18 40-10-6-20-16-26-22-4-4 0-14 8-18z" />
+      <g class="face">
+        <g class="eye" transform="translate(132 142)">
+          <circle class="eye-sclera" cx="0" cy="0" r="20" />
+          <ellipse class="eye-shine" cx="-4" cy="-8" rx="6" ry="4" />
+          <rect class="fur-medium blink" x="-22" y="-20" width="44" height="22" rx="11" />
+          <path class="line" d="M-14 4c6 4 12 4 18 0" />
+        </g>
+        <g class="eye" transform="translate(196 142)">
+          <circle class="eye-sclera" cx="0" cy="0" r="20" />
+          <ellipse class="eye-shine" cx="4" cy="-8" rx="6" ry="4" />
+          <rect class="fur-medium blink" x="-22" y="-20" width="44" height="22" rx="11" />
+          <path class="line" d="M-4 4c6 4 12 4 18 0" />
+        </g>
+        <ellipse class="nose" cx="162" cy="166" rx="9" ry="7" />
+        <path class="line" d="M162 172v12" />
+        <path class="line" d="M150 186c8 6 16 6 24 0" />
+        <path class="whisker" d="M122 170c12 2 24 8 30 12" />
+        <path class="whisker" d="M206 170c-12 2-24 8-30 12" />
+      </g>
+    </g>
+  </g>
+</svg>

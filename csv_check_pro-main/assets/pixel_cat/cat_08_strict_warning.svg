@@ -1,0 +1,89 @@
+<svg width="320" height="320" viewBox="0 0 320 320" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Кот охраняет предупреждающий плакат</title>
+  <desc id="desc">Чёрный кот сидит у плаката с правилами и строго смотрит на зрителя.</desc>
+  <style>
+    .shadow { fill: rgba(26, 22, 38, 0.2); }
+    .poster { fill: #f6f7fb; stroke: #d0d7f0; stroke-width: 4; stroke-linejoin: round; }
+    .poster-text { fill: #3a4060; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600; letter-spacing: 0.4px; }
+    .poster-accent { fill: #ffb45f; }
+    .fur-dark { fill: #1f1d2c; }
+    .fur-medium { fill: #29263a; }
+    .fur-light { fill: #34324a; }
+    .inner-ear { fill: #f6a6b8; opacity: 0.8; }
+    .eye-sclera { fill: #f8d779; }
+    .eye-pupil { fill: #111018; }
+    .eye-shine { fill: #ffffff; opacity: 0.85; }
+    .nose { fill: #f6a6b8; }
+    .whisker { stroke: #d8d6e6; stroke-width: 2.4; stroke-linecap: round; }
+    .line { fill: none; stroke: #15121f; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .tail { transform-box: fill-box; transform-origin: 20% 80%; animation: tail-sway 3.4s ease-in-out infinite; }
+    .head { transform-box: fill-box; transform-origin: 50% 82%; animation: head-tilt 4s ease-in-out infinite; }
+    .blink { transform-box: fill-box; transform-origin: 50% 0%; animation: blink 7s ease-in-out infinite; }
+    .poster { transform-box: fill-box; transform-origin: 50% 0%; animation: poster-wobble 6s ease-in-out infinite; }
+    @keyframes tail-sway {
+      0%, 100% { transform: rotate(8deg); }
+      50% { transform: rotate(-6deg); }
+    }
+    @keyframes head-tilt {
+      0%, 100% { transform: rotate(-2deg); }
+      50% { transform: rotate(2deg); }
+    }
+    @keyframes blink {
+      0%, 66%, 68%, 100% { transform: scaleY(0); }
+      67% { transform: scaleY(1); }
+    }
+    @keyframes poster-wobble {
+      0%, 100% { transform: rotate(0deg); }
+      50% { transform: rotate(-1.5deg); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .tail, .head, .blink, .poster { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+    }
+  </style>
+  <ellipse class="shadow" cx="168" cy="270" rx="112" ry="28" />
+  <g class="poster" transform="translate(66 70)">
+    <rect x="0" y="0" width="112" height="152" rx="16" />
+    <rect class="poster-accent" x="14" y="20" width="84" height="10" rx="4" />
+    <text class="poster-text" x="56" y="58" text-anchor="middle">НЕ ЛОМАЙ</text>
+    <text class="poster-text" x="56" y="80" text-anchor="middle">ПРОД</text>
+    <text class="poster-text" x="56" y="110" text-anchor="middle">ГЛАДЬ</text>
+    <text class="poster-text" x="56" y="132" text-anchor="middle">КОТА</text>
+  </g>
+  <g class="cat">
+    <path class="tail fur-medium" d="M246 206c20 12 26 34 18 50-8 18-30 28-46 18-12-6-8-18 2-24s16-14 12-22-2-14 14-22z" />
+    <g class="body">
+      <path class="fur-medium" d="M120 156c6-28 34-48 64-52 34-4 68 16 82 42 16 26 8 56-10 78-18 22-44 34-70 32-26-2-54-16-70-38-14-20-14-44 4-62z" />
+      <path class="fur-light" d="M140 216c10 18 34 32 54 34 20 2 40-10 48-22-4 24-26 42-52 42-32 0-60-18-74-44 10 6 18 4 24-10z" opacity="0.4" />
+    </g>
+    <g class="paws">
+      <path class="fur-light" d="M142 246c-8 10-26 10-36 0s-2-26 14-30c16-4 28 8 28 18 0 6-2 8-6 12z" />
+      <path class="fur-light" d="M222 246c8 10 26 10 36 0 10-10-2-30-18-32-14-2-26 12-24 20 0 4 4 8 6 12z" />
+    </g>
+    <g class="head head">
+      <path class="fur-medium" d="M134 124c4-26 30-50 60-50s54 22 58 48c4 26-6 54-20 68-12 12-26 18-40 18s-28-6-40-18c-16-14-24-40-18-66z" />
+      <path class="fur-dark" d="M144 92c-16 6-32 30-28 60 6-18 20-28 32-30 10-2 12-20-4-30z" opacity="0.55" />
+      <path class="fur-dark" d="M218 92c16 6 32 30 28 60-6-18-20-28-32-30-10-2-12-20 4-30z" opacity="0.55" />
+      <path class="inner-ear" d="M148 100c-8 4-18 22-18 36 10-6 20-14 26-20 4-4-2-12-8-16z" />
+      <path class="inner-ear" d="M208 100c8 4 18 22 18 36-10-6-20-14-26-20-4-4 2-12 8-16z" />
+      <g class="face">
+        <g class="eye" transform="translate(148 150)">
+          <circle class="eye-sclera" cx="0" cy="0" r="18" />
+          <ellipse class="eye-pupil" cx="-2" cy="4" rx="8" ry="10" />
+          <ellipse class="eye-shine" cx="-6" cy="-6" rx="6" ry="4" />
+          <rect class="fur-medium blink" x="-20" y="-18" width="40" height="18" rx="9" />
+        </g>
+        <g class="eye" transform="translate(196 150)">
+          <circle class="eye-sclera" cx="0" cy="0" r="18" />
+          <ellipse class="eye-pupil" cx="2" cy="4" rx="8" ry="10" />
+          <ellipse class="eye-shine" cx="6" cy="-6" rx="6" ry="4" />
+          <rect class="fur-medium blink" x="-20" y="-18" width="40" height="18" rx="9" />
+        </g>
+        <ellipse class="nose" cx="172" cy="170" rx="8" ry="6" />
+        <path class="line" d="M172 176v12" />
+        <path class="line" d="M160 188c6 6 14 6 20 0" />
+        <path class="whisker" d="M142 170c12 2 22 6 30 10" />
+        <path class="whisker" d="M202 170c-12 2-22 6-30 10" />
+      </g>
+    </g>
+  </g>
+</svg>

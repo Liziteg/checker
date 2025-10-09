@@ -1,0 +1,8 @@
+{
+  "name": "csv_check_pro",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  }
+}
