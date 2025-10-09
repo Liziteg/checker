@@ -1,1 +1,51 @@
-[]
+[
+  {
+    "id": "merge-comfort",
+    "ariaLabel": "Кот одобрительно кивает, когда файлы успешно проходят ревью.",
+    "image": "assets/cat_scenes/merge-comfort.svg",
+    "message": "Файлы сошлись — можно гладить. Не сошлись — готовьте баг-репорт и валерьянку.",
+    "positionClass": "cat-mascot--top-left"
+  },
+  {
+    "id": "crosswalk-join",
+    "ariaLabel": "Кот осторожно переходит дорожку между таблицами данных.",
+    "image": "assets/cat_scenes/crosswalk-join.svg",
+    "message": "Перехожу дорогу только между таблицами — для честного inner join.",
+    "positionClass": "cat-mascot--top-right"
+  },
+  {
+    "id": "etl-ready",
+    "ariaLabel": "Кот с чашкой кофе изучает чеклист по загрузкам данных.",
+    "image": "assets/cat_scenes/etl-ready.svg",
+    "message": "ETL? Легко: Ем, Тестирую, Ладно — грузим. Остальное — по значениям.",
+    "positionClass": "cat-mascot--middle-left"
+  },
+  {
+    "id": "prod-guardian",
+    "ariaLabel": "Кот серьёзно следит за стабильностью продакшена.",
+    "image": "assets/cat_scenes/prod-guardian.svg",
+    "message": "Мой список правил прост. Первое — не ломать прод. Второе — гладить кота. Третье — смотри пункт один.",
+    "positionClass": "cat-mascot--middle-right"
+  },
+  {
+    "id": "metrics-purr",
+    "ariaLabel": "Кот контролирует панели мониторинга и графики.",
+    "image": "assets/cat_scenes/metrics-purr.svg",
+    "message": "Слежу, чтобы графики не проседали, а метрики мурлыкали как надо. Если что — лапой по клавиатуре!",
+    "positionClass": "cat-mascot--bottom-left"
+  },
+  {
+    "id": "vigilant-review",
+    "ariaLabel": "Кот помогает команде и проверяет подозрительные файлы.",
+    "image": "assets/cat_scenes/vigilant-review.svg",
+    "message": "Лиза ревьюит модель, Руслан фикстит баги, а я не пропускаю ни одного подозрительного файла.",
+    "positionClass": "cat-mascot--bottom-right"
+  },
+  {
+    "id": "report-ready",
+    "ariaLabel": "Кот держит хвост трубой и готовится выдать отчёт.",
+    "image": "assets/cat_scenes/report-ready.svg",
+    "message": "!Данные загружены, кофе горячий, хвост держит баланс. Готов выдать отчёт по первому требованию!",
+    "positionClass": "cat-mascot--top-left"
+  }
+]
