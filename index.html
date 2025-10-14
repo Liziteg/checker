@@ -57,6 +57,14 @@
                         </select>
                         <p class="field-hint">Выберите формат файлов, которые хотите сравнить.</p>
                     </div>
+                    <div class="field-group" id="delimiter-group">
+                        <label for="delimiter">Разделитель столбцов</label>
+                        <select id="delimiter" name="delimiter">
+                            <option value="," selected>Запятая (,)</option>
+                            <option value=";">Точка с запятой (;)</option>
+                        </select>
+                        <p class="field-hint">Укажите символ, который разделяет значения в CSV или TXT файлах.</p>
+                    </div>
                     <div class="field-group">
                         <label for="reportFormat">Формат отчётов</label>
                         <select id="reportFormat" name="reportFormat">
