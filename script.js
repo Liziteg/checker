@@ -23,8 +23,6 @@ const REPORT_FORMATS = {
     }
 };
 const DEFAULT_REPORT_FORMAT = 'xlsx';
-const DEFAULT_DELIMITER = ',';
-const SUPPORTED_DELIMITERS = new Set([',', ';']);
 
 // --- Настройки блоков с котом-маскотом -----------------------------------------
 const LAST_SCENE_STORAGE_KEY = 'csv-check-pro:last-cat-scene';
@@ -48,8 +46,6 @@ let errorBlock;
 let downloadReportButton;
 let downloadDetailedReportButton;
 let loadingIndicator;
-let delimiterSelect;
-let delimiterFieldGroup;
 
 // --- Состояние последнего сравнения --------------------------------------------
 let lastDifferences = [];
@@ -65,11 +61,6 @@ if (typeof document !== 'undefined') {
     tableFormatSelect = document.getElementById('tableFormat');
     reportFormatSelect = document.getElementById('reportFormat');
     keyFieldInput = document.getElementById('keyField');
-    delimiterSelect = document.getElementById('delimiter');
-    delimiterFieldGroup = document.getElementById('delimiter-group');
-    if (delimiterSelect && !SUPPORTED_DELIMITERS.has(delimiterSelect.value)) {
-        delimiterSelect.value = getDefaultDelimiter();
-    }
     keyHeader = document.getElementById('key-header');
     tableBody = document.querySelector('#results-table tbody');
     valueHeaderA = document.getElementById('value-header-a');
@@ -379,7 +370,6 @@ function readDelimitedFile(file) {
             skipEmptyLines: 'greedy',
             encoding: 'utf-8',
             dynamicTyping: false,
-            delimiter: getSelectedDelimiter(),
             error: (error) => reject(new Error(`Не удалось прочитать файл ${file.name}: ${error.message}`)),
             complete: (results) => {
                 if (results.errors && results.errors.length > 0) {
@@ -625,23 +615,16 @@ function initializeFormatHandling() {
         return;
     }
     updateFileInputsAccept(tableFormatSelect.value);
-    updateDelimiterVisibility(tableFormatSelect.value);
     tableFormatSelect.addEventListener('change', () => {
-        const format = tableFormatSelect.value;
-        updateFileInputsAccept(format);
-        updateDelimiterVisibility(format);
+        updateFileInputsAccept(tableFormatSelect.value);
         clearFilesAfterFormatChange();
         hideError();
         lastDifferences = [];
         lastFileNameA = '';
         lastFileNameB = '';
         lastKeyFieldName = '';
-        if (downloadReportButton) {
-            downloadReportButton.disabled = true;
-        }
-        if (downloadDetailedReportButton) {
-            downloadDetailedReportButton.disabled = true;
-        }
+        downloadReportButton.disabled = true;
+        downloadDetailedReportButton.disabled = true;
         renderSummary('');
         resetTable();
     });
@@ -660,43 +643,6 @@ function updateFileInputsAccept(format) {
         fileInputA.removeAttribute('accept');
         fileInputB.removeAttribute('accept');
     }
-}
-
-function updateDelimiterVisibility(format) {
-    if (!delimiterFieldGroup) {
-        return;
-    }
-    const shouldShow = format === 'csv' || format === 'txt';
-    delimiterFieldGroup.hidden = !shouldShow;
-    if (delimiterSelect) {
-        delimiterSelect.disabled = !shouldShow;
-    }
-    if (!shouldShow) {
-        resetDelimiterSelection();
-    }
-}
-
-function resetDelimiterSelection() {
-    if (!delimiterSelect) {
-        return;
-    }
-    delimiterSelect.value = getDefaultDelimiter();
-}
-
-function getSelectedDelimiter() {
-    const rawValue = delimiterSelect?.value ?? DEFAULT_DELIMITER;
-    if (SUPPORTED_DELIMITERS.has(rawValue)) {
-        return rawValue;
-    }
-    return getDefaultDelimiter();
-}
-
-function getDefaultDelimiter() {
-    if (SUPPORTED_DELIMITERS.has(DEFAULT_DELIMITER)) {
-        return DEFAULT_DELIMITER;
-    }
-    const [fallbackDelimiter] = Array.from(SUPPORTED_DELIMITERS);
-    return fallbackDelimiter || ',';
 }
 
 function clearFilesAfterFormatChange() {
