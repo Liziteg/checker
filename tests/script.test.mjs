@@ -5,8 +5,12 @@ import {
   buildAggregatedReportData,
   compareDatasets,
   convertRowsToCsv,
+  hasMeaningfulColumnStructure,
+  isUndetectableDelimiterError,
+  selectDelimiterFromSample,
   sanitizeFilename,
-  sanitizeRows
+  sanitizeRows,
+  shouldRetryWithFallbackDelimiter
 } from '../script.js';
 
 test('compareDatasets detects mismatches and missing records', () => {
@@ -76,4 +80,73 @@ test('convertRowsToCsv quotes cells with commas and quotes', () => {
     csv,
     'Field,Value\r\nnote,"needs, quoting"\r\nquote,"""hello"""'
   );
+});
+
+test('shouldRetryWithFallbackDelimiter requests retry when delimiter is unknown', () => {
+  const result = {
+    rows: [
+      { 'POLICY_NO;Amount': '1;100' }
+    ],
+    meta: { fields: ['POLICY_NO;Amount'] },
+    errors: [
+      {
+        code: 'UndetectableDelimiter',
+        message: "Unable to auto-detect delimiting character; defaulted to ','"
+      }
+    ]
+  };
+
+  assert.equal(shouldRetryWithFallbackDelimiter(result), true);
+});
+
+test('shouldRetryWithFallbackDelimiter does not retry when columns are meaningful', () => {
+  const result = {
+    rows: [
+      { POLICY_NO: '1', Amount: '200' }
+    ],
+    meta: { fields: ['POLICY_NO', 'Amount'] },
+    errors: [
+      {
+        code: 'UndetectableDelimiter',
+        message: "Unable to auto-detect delimiting character; defaulted to ','"
+      }
+    ]
+  };
+
+  assert.equal(shouldRetryWithFallbackDelimiter(result), false);
+});
+
+test('hasMeaningfulColumnStructure checks field information and rows', () => {
+  assert.equal(hasMeaningfulColumnStructure([{ A: '1', B: '2' }], {}), true);
+  assert.equal(hasMeaningfulColumnStructure([{ only: 'value' }], { fields: ['only'] }), false);
+});
+
+test('isUndetectableDelimiterError recognizes Papa Parse warnings', () => {
+  assert.equal(isUndetectableDelimiterError({ code: 'UndetectableDelimiter' }), true);
+  assert.equal(
+    isUndetectableDelimiterError({ message: 'Unable to auto-detect delimiting character; defaulted to \';\'' }),
+    true
+  );
+  assert.equal(isUndetectableDelimiterError({ message: 'Different error' }), false);
+});
+
+
+test('selectDelimiterFromSample picks semicolon when columns align', () => {
+  const sample = [
+    'POLICY_NO;Amount;Status',
+    '1;100;Active',
+    '2;150;Pending',
+    '3;200;Closed'
+  ].join('\n');
+
+  assert.equal(selectDelimiterFromSample(sample), ';');
+});
+
+test('selectDelimiterFromSample returns null when delimiter is ambiguous', () => {
+  const sample = [
+    'Just one column value',
+    'Another line without delimiter'
+  ].join('\n');
+
+  assert.equal(selectDelimiterFromSample(sample), null);
 });

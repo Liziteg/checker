@@ -8,6 +8,12 @@ const TABLE_FORMATS = {
     xlsx: { label: 'Excel (.xlsx)', extensions: ['.xlsx'], accept: '.xlsx', reader: readExcelFile },
     xls: { label: 'Excel 97-2003 (.xls)', extensions: ['.xls'], accept: '.xls', reader: readExcelFile }
 };
+const FALLBACK_DELIMITERS = [';', '\t', '|'];
+const DELIMITER_CANDIDATES = [',', ...FALLBACK_DELIMITERS];
+const DELIMITER_SNIFF_SAMPLE_BYTES = 128 * 1024; // 128 КБ достаточно для эвристики
+const MAX_SAMPLE_LINES_FOR_DETECTION = 50;
+const AUTODETECT_DELIMITER_ERROR_MESSAGE = 'Unable to auto-detect delimiting character';
+const PAPA_PARSE_CHUNK_SIZE = 512 * 1024; // 512 КБ порции чтения
 const REPORT_FORMATS = {
     xlsx: {
         extension: 'xlsx',
@@ -360,32 +366,342 @@ function readTableFile(file, format) {
 
 /**
  * Прочитать текстовый файл с разделителями и вернуть массив объектов.
+ * Для стабильной работы на слабых устройствах чтение выполняется порциями
+ * с повторными попытками при ошибке автоопределения разделителя.
  * @param {File} file
  * @returns {Promise<{ rows: Array<Record<string, string>> }>}
  */
-function readDelimitedFile(file) {
+async function readDelimitedFile(file) {
+    if (typeof Papa === 'undefined') {
+        throw new Error('Библиотека для чтения CSV не загружена. Обновите страницу и попробуйте снова.');
+    }
+
+    let sniffedDelimiter = null;
+    try {
+        sniffedDelimiter = await detectPreferredDelimiter(file);
+    } catch (sniffError) {
+        console.warn('Не удалось определить разделитель по образцу:', sniffError);
+    }
+
+    const delimitersToTry = [];
+    const seenDelimiters = new Set();
+
+    if (sniffedDelimiter) {
+        delimitersToTry.push(sniffedDelimiter);
+        seenDelimiters.add(sniffedDelimiter);
+    }
+
+    for (const delimiter of [undefined, ...FALLBACK_DELIMITERS]) {
+        const key = delimiter ?? 'auto';
+        if (seenDelimiters.has(key)) {
+            continue;
+        }
+        delimitersToTry.push(delimiter);
+        seenDelimiters.add(key);
+    }
+
+    let lastError = null;
+
+    for (const delimiter of delimitersToTry) {
+        try {
+            const result = await parseDelimitedFileChunked(file, delimiter);
+            if (!delimiter && shouldRetryWithFallbackDelimiter(result)) {
+                lastError = new Error(`Не удалось автоматически определить разделитель в файле ${file.name}.`);
+                continue;
+            }
+
+            const blockingErrors = filterBlockingParsingErrors(result.errors);
+            if (blockingErrors.length > 0) {
+                const firstError = blockingErrors[0];
+                throw new Error(`Ошибка разбора файла ${file.name}: ${firstError.message}`);
+            }
+
+            return { rows: result.rows };
+        } catch (error) {
+            lastError = error instanceof Error ? error : new Error(String(error));
+        }
+    }
+
+    throw lastError ?? new Error(`Не удалось прочитать файл ${file.name}.`);
+}
+
+async function detectPreferredDelimiter(file) {
+    if (!file || typeof file.slice !== 'function' || typeof FileReader === 'undefined') {
+        return null;
+    }
+
+    const sampleText = await readFileSliceAsText(file, DELIMITER_SNIFF_SAMPLE_BYTES);
+    if (typeof sampleText !== 'string' || sampleText.trim().length === 0) {
+        return null;
+    }
+
+    const selected = selectDelimiterFromSample(sampleText);
+    return selected === ',' ? null : selected;
+}
+
+function selectDelimiterFromSample(sampleText) {
+    if (typeof sampleText !== 'string' || sampleText.length === 0) {
+        return null;
+    }
+
+    const rawLines = sampleText.split(/\r\n|\n|\r/).filter((line) => line.length > 0);
+    if (rawLines.length === 0) {
+        return null;
+    }
+
+    const lines = rawLines.slice(0, MAX_SAMPLE_LINES_FOR_DETECTION);
+    let bestDelimiter = null;
+    let bestScore = 0;
+
+    for (const candidate of DELIMITER_CANDIDATES) {
+        const score = scoreDelimiterLines(lines, candidate);
+        if (score > bestScore * 1.05) {
+            bestScore = score;
+            bestDelimiter = candidate;
+        }
+    }
+
+    if (!bestDelimiter || bestScore <= 0) {
+        return null;
+    }
+
+    if (bestDelimiter === ',') {
+        return null;
+    }
+
+    return bestDelimiter;
+}
+
+function scoreDelimiterLines(lines, delimiter) {
+    if (!Array.isArray(lines) || lines.length === 0) {
+        return 0;
+    }
+
+    let validLines = 0;
+    let totalCells = 0;
+    let minCells = Infinity;
+    let maxCells = 0;
+    let delimiterOccurrences = 0;
+
+    for (const line of lines) {
+        if (typeof line !== 'string' || line.length === 0) {
+            continue;
+        }
+        const cells = line.split(delimiter);
+        if (cells.length <= 1) {
+            continue;
+        }
+        validLines += 1;
+        totalCells += cells.length;
+        delimiterOccurrences += cells.length - 1;
+        if (cells.length < minCells) {
+            minCells = cells.length;
+        }
+        if (cells.length > maxCells) {
+            maxCells = cells.length;
+        }
+    }
+
+    if (validLines === 0) {
+        return 0;
+    }
+
+    const minRequired = Math.max(2, Math.floor(lines.length * 0.3));
+    if (validLines < minRequired) {
+        return 0;
+    }
+
+    const averageCells = totalCells / validLines;
+    const consistency = maxCells > 0 ? minCells / maxCells : 0;
+    const density = delimiterOccurrences / lines.length;
+    if (consistency <= 0) {
+        return 0;
+    }
+
+    return validLines * averageCells * consistency * (1 + density);
+}
+
+function readFileSliceAsText(blob, bytes, encoding = 'utf-8') {
+    return new Promise((resolve) => {
+        if (!blob || typeof blob.slice !== 'function' || typeof FileReader === 'undefined') {
+            resolve(null);
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.addEventListener('error', () => resolve(null));
+        reader.addEventListener('abort', () => resolve(null));
+        reader.addEventListener('load', () => {
+            const text = typeof reader.result === 'string' ? reader.result : null;
+            resolve(text);
+        });
+        try {
+            const slice = blob.slice(0, Math.min(bytes, blob.size));
+            reader.readAsText(slice, encoding);
+        } catch (error) {
+            console.warn('Не удалось прочитать часть файла для определения разделителя:', error);
+            resolve(null);
+        }
+    });
+}
+
+/**
+ * Прочитать CSV/TSV файл кусочками для снижения пиковых затрат памяти.
+ * @param {File} file
+ * @param {string|undefined} delimiter
+ * @returns {Promise<{ rows: Array<Record<string, string>>>, errors: Array<object>, meta: object }>}
+ */
+function parseDelimitedFileChunked(file, delimiter) {
     return new Promise((resolve, reject) => {
+        const aggregatedRows = [];
+        const aggregatedErrors = [];
+        let fatalError = null;
+        let lastChunkMeta = null;
+        let abortedDueToUndetectableDelimiter = false;
+
+        const workerSupported = typeof Worker !== 'undefined';
+
         Papa.parse(file, {
             header: true,
             skipEmptyLines: 'greedy',
             encoding: 'utf-8',
             dynamicTyping: false,
-            error: (error) => reject(new Error(`Не удалось прочитать файл ${file.name}: ${error.message}`)),
+            worker: workerSupported,
+            chunkSize: PAPA_PARSE_CHUNK_SIZE,
+            delimiter,
+            chunk: (results, parser) => {
+                const chunkErrors = Array.isArray(results.errors) ? results.errors : [];
+                if (chunkErrors.length > 0) {
+                    aggregatedErrors.push(...chunkErrors);
+                    const blocking = chunkErrors.find((error) => error && error.fatal);
+                    if (blocking && !fatalError) {
+                        fatalError = blocking;
+                    }
+                }
+
+                if (Array.isArray(results.data) && results.data.length > 0) {
+                    const sanitized = sanitizeRows(results.data);
+                    for (const row of sanitized) {
+                        aggregatedRows.push(row);
+                    }
+                }
+
+                if (Array.isArray(results.data)) {
+                    results.data.length = 0;
+                }
+
+                if (results && results.meta) {
+                    lastChunkMeta = results.meta;
+                }
+
+                if (fatalError) {
+                    parser.abort();
+                    return;
+                }
+
+                if (!delimiter && chunkErrors.some((error) => isUndetectableDelimiterError(error))) {
+                    if (!abortedDueToUndetectableDelimiter) {
+                        abortedDueToUndetectableDelimiter = true;
+                        parser.abort();
+                    }
+                }
+            },
             complete: (results) => {
-                if (results.errors && results.errors.length > 0) {
-                    const firstError = results.errors[0];
-                    reject(new Error(`Ошибка разбора файла ${file.name}: ${firstError.message}`));
+                const combinedErrors = aggregatedErrors.concat(Array.isArray(results?.errors) ? results.errors : []);
+                const resolvedMeta = results?.meta && Object.keys(results.meta).length > 0
+                    ? results.meta
+                    : lastChunkMeta ?? {};
+                if (fatalError) {
+                    reject(new Error(`Ошибка разбора файла ${file.name}: ${fatalError.message}`));
                     return;
                 }
-                if (!Array.isArray(results.data)) {
-                    reject(new Error(`Файл ${file.name} не содержит корректных данных.`));
-                    return;
-                }
-                const sanitizedRows = sanitizeRows(results.data);
-                resolve({ rows: sanitizedRows });
+                resolve({
+                    rows: aggregatedRows,
+                    errors: combinedErrors,
+                    meta: resolvedMeta
+                });
+            },
+            error: (error) => {
+                const message = error instanceof Error ? error.message : String(error ?? 'Неизвестная ошибка');
+                reject(new Error(`Не удалось прочитать файл ${file.name}: ${message}`));
             }
         });
     });
+}
+
+/**
+ * Определить, требуется ли повторить чтение с явным разделителем.
+ * @param {{ rows: Array<Record<string, string>>, errors?: Array<object>, meta?: object }} result
+ */
+function shouldRetryWithFallbackDelimiter(result) {
+    if (!result || !Array.isArray(result.errors) || result.errors.length === 0) {
+        return false;
+    }
+    const hasAutodetectError = result.errors.some((error) => isUndetectableDelimiterError(error));
+    if (!hasAutodetectError) {
+        return false;
+    }
+    return !hasMeaningfulColumnStructure(result.rows, result.meta);
+}
+
+/**
+ * Проверить, есть ли в наборе данных больше одного столбца после разбора.
+ * @param {Array<Record<string, string>>} rows
+ * @param {{ fields?: Array<string> }} meta
+ */
+function hasMeaningfulColumnStructure(rows, meta = {}) {
+    if (Array.isArray(meta.fields)) {
+        const meaningfulColumns = meta.fields
+            .map((field) => typeof field === 'string' ? field.trim() : String(field ?? '').trim())
+            .filter((field) => field.length > 0);
+        if (meaningfulColumns.length > 1) {
+            return true;
+        }
+    }
+    if (Array.isArray(rows)) {
+        for (const row of rows) {
+            if (row && typeof row === 'object' && Object.keys(row).length > 1) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+/**
+ * Отфильтровать ошибки разбора, которые требуют остановки обработки.
+ * @param {Array<object>} errors
+ */
+function filterBlockingParsingErrors(errors) {
+    if (!Array.isArray(errors)) {
+        return [];
+    }
+    return errors.filter((error) => !isIgnorableParsingWarning(error));
+}
+
+/**
+ * Определить, является ли предупреждение незначительным и его можно игнорировать.
+ * @param {object} error
+ */
+function isIgnorableParsingWarning(error) {
+    return isUndetectableDelimiterError(error);
+}
+
+/**
+ * Проверить, относится ли ошибка Papa Parse к невозможности автоопределения разделителя.
+ * @param {object} error
+ */
+function isUndetectableDelimiterError(error) {
+    if (!error) {
+        return false;
+    }
+    if (error.code === 'UndetectableDelimiter') {
+        return true;
+    }
+    if (typeof error.message === 'string' && error.message.includes(AUTODETECT_DELIMITER_ERROR_MESSAGE)) {
+        return true;
+    }
+    return false;
 }
 
 /**
@@ -1192,8 +1508,12 @@ export {
     convertRowsToTxt,
     detectDuplicateKeys,
     escapeCsvValue,
+    hasMeaningfulColumnStructure,
+    isUndetectableDelimiterError,
     normalizeKeyValue,
+    selectDelimiterFromSample,
     resolveKeyField,
     sanitizeFilename,
-    sanitizeRows
+    sanitizeRows,
+    shouldRetryWithFallbackDelimiter
 };
