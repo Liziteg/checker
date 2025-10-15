@@ -7,6 +7,7 @@ import {
   convertRowsToCsv,
   hasMeaningfulColumnStructure,
   isUndetectableDelimiterError,
+  selectDelimiterFromSample,
   sanitizeFilename,
   sanitizeRows,
   shouldRetryWithFallbackDelimiter
@@ -127,4 +128,25 @@ test('isUndetectableDelimiterError recognizes Papa Parse warnings', () => {
     true
   );
   assert.equal(isUndetectableDelimiterError({ message: 'Different error' }), false);
+});
+
+
+test('selectDelimiterFromSample picks semicolon when columns align', () => {
+  const sample = [
+    'POLICY_NO;Amount;Status',
+    '1;100;Active',
+    '2;150;Pending',
+    '3;200;Closed'
+  ].join('\n');
+
+  assert.equal(selectDelimiterFromSample(sample), ';');
+});
+
+test('selectDelimiterFromSample returns null when delimiter is ambiguous', () => {
+  const sample = [
+    'Just one column value',
+    'Another line without delimiter'
+  ].join('\n');
+
+  assert.equal(selectDelimiterFromSample(sample), null);
 });
