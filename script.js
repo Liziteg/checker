@@ -8,6 +8,9 @@ const TABLE_FORMATS = {
     xlsx: { label: 'Excel (.xlsx)', extensions: ['.xlsx'], accept: '.xlsx', reader: readExcelFile },
     xls: { label: 'Excel 97-2003 (.xls)', extensions: ['.xls'], accept: '.xls', reader: readExcelFile }
 };
+const FALLBACK_DELIMITERS = [';', '\t', '|'];
+const AUTODETECT_DELIMITER_ERROR_MESSAGE = 'Unable to auto-detect delimiting character';
+const PAPA_PARSE_CHUNK_SIZE = 512 * 1024; // 512 КБ порции чтения
 const REPORT_FORMATS = {
     xlsx: {
         extension: 'xlsx',
@@ -360,32 +363,174 @@ function readTableFile(file, format) {
 
 /**
  * Прочитать текстовый файл с разделителями и вернуть массив объектов.
+ * Для стабильной работы на слабых устройствах чтение выполняется порциями
+ * с повторными попытками при ошибке автоопределения разделителя.
  * @param {File} file
  * @returns {Promise<{ rows: Array<Record<string, string>> }>}
  */
-function readDelimitedFile(file) {
+async function readDelimitedFile(file) {
+    if (typeof Papa === 'undefined') {
+        throw new Error('Библиотека для чтения CSV не загружена. Обновите страницу и попробуйте снова.');
+    }
+
+    const delimitersToTry = [undefined, ...FALLBACK_DELIMITERS];
+    let lastError = null;
+
+    for (const delimiter of delimitersToTry) {
+        try {
+            const result = await parseDelimitedFileChunked(file, delimiter);
+            if (!delimiter && shouldRetryWithFallbackDelimiter(result)) {
+                lastError = new Error(`Не удалось автоматически определить разделитель в файле ${file.name}.`);
+                continue;
+            }
+
+            const blockingErrors = filterBlockingParsingErrors(result.errors);
+            if (blockingErrors.length > 0) {
+                const firstError = blockingErrors[0];
+                throw new Error(`Ошибка разбора файла ${file.name}: ${firstError.message}`);
+            }
+
+            return { rows: result.rows };
+        } catch (error) {
+            lastError = error instanceof Error ? error : new Error(String(error));
+        }
+    }
+
+    throw lastError ?? new Error(`Не удалось прочитать файл ${file.name}.`);
+}
+
+/**
+ * Прочитать CSV/TSV файл кусочками для снижения пиковых затрат памяти.
+ * @param {File} file
+ * @param {string|undefined} delimiter
+ * @returns {Promise<{ rows: Array<Record<string, string>>>, errors: Array<object>, meta: object }>}
+ */
+function parseDelimitedFileChunked(file, delimiter) {
     return new Promise((resolve, reject) => {
+        const aggregatedRows = [];
+        const aggregatedErrors = [];
+        let fatalError = null;
+
         Papa.parse(file, {
             header: true,
             skipEmptyLines: 'greedy',
             encoding: 'utf-8',
             dynamicTyping: false,
-            error: (error) => reject(new Error(`Не удалось прочитать файл ${file.name}: ${error.message}`)),
+            worker: true,
+            chunkSize: PAPA_PARSE_CHUNK_SIZE,
+            delimiter,
+            chunk: (results, parser) => {
+                if (Array.isArray(results.errors) && results.errors.length > 0) {
+                    aggregatedErrors.push(...results.errors);
+                    const blocking = results.errors.find((error) => error && error.fatal);
+                    if (blocking && !fatalError) {
+                        fatalError = blocking;
+                        parser.abort();
+                    }
+                }
+                if (Array.isArray(results.data) && results.data.length > 0) {
+                    const sanitized = sanitizeRows(results.data);
+                    for (const row of sanitized) {
+                        aggregatedRows.push(row);
+                    }
+                }
+                if (Array.isArray(results.data)) {
+                    results.data.length = 0;
+                }
+            },
             complete: (results) => {
-                if (results.errors && results.errors.length > 0) {
-                    const firstError = results.errors[0];
-                    reject(new Error(`Ошибка разбора файла ${file.name}: ${firstError.message}`));
+                const combinedErrors = aggregatedErrors.concat(Array.isArray(results?.errors) ? results.errors : []);
+                if (fatalError) {
+                    reject(new Error(`Ошибка разбора файла ${file.name}: ${fatalError.message}`));
                     return;
                 }
-                if (!Array.isArray(results.data)) {
-                    reject(new Error(`Файл ${file.name} не содержит корректных данных.`));
-                    return;
-                }
-                const sanitizedRows = sanitizeRows(results.data);
-                resolve({ rows: sanitizedRows });
+                resolve({
+                    rows: aggregatedRows,
+                    errors: combinedErrors,
+                    meta: results?.meta ?? {}
+                });
+            },
+            error: (error) => {
+                const message = error instanceof Error ? error.message : String(error ?? 'Неизвестная ошибка');
+                reject(new Error(`Не удалось прочитать файл ${file.name}: ${message}`));
             }
         });
     });
+}
+
+/**
+ * Определить, требуется ли повторить чтение с явным разделителем.
+ * @param {{ rows: Array<Record<string, string>>, errors?: Array<object>, meta?: object }} result
+ */
+function shouldRetryWithFallbackDelimiter(result) {
+    if (!result || !Array.isArray(result.errors) || result.errors.length === 0) {
+        return false;
+    }
+    const hasAutodetectError = result.errors.some((error) => isUndetectableDelimiterError(error));
+    if (!hasAutodetectError) {
+        return false;
+    }
+    return !hasMeaningfulColumnStructure(result.rows, result.meta);
+}
+
+/**
+ * Проверить, есть ли в наборе данных больше одного столбца после разбора.
+ * @param {Array<Record<string, string>>} rows
+ * @param {{ fields?: Array<string> }} meta
+ */
+function hasMeaningfulColumnStructure(rows, meta = {}) {
+    if (Array.isArray(meta.fields)) {
+        const meaningfulColumns = meta.fields
+            .map((field) => typeof field === 'string' ? field.trim() : String(field ?? '').trim())
+            .filter((field) => field.length > 0);
+        if (meaningfulColumns.length > 1) {
+            return true;
+        }
+    }
+    if (Array.isArray(rows)) {
+        for (const row of rows) {
+            if (row && typeof row === 'object' && Object.keys(row).length > 1) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+/**
+ * Отфильтровать ошибки разбора, которые требуют остановки обработки.
+ * @param {Array<object>} errors
+ */
+function filterBlockingParsingErrors(errors) {
+    if (!Array.isArray(errors)) {
+        return [];
+    }
+    return errors.filter((error) => !isIgnorableParsingWarning(error));
+}
+
+/**
+ * Определить, является ли предупреждение незначительным и его можно игнорировать.
+ * @param {object} error
+ */
+function isIgnorableParsingWarning(error) {
+    return isUndetectableDelimiterError(error);
+}
+
+/**
+ * Проверить, относится ли ошибка Papa Parse к невозможности автоопределения разделителя.
+ * @param {object} error
+ */
+function isUndetectableDelimiterError(error) {
+    if (!error) {
+        return false;
+    }
+    if (error.code === 'UndetectableDelimiter') {
+        return true;
+    }
+    if (typeof error.message === 'string' && error.message.includes(AUTODETECT_DELIMITER_ERROR_MESSAGE)) {
+        return true;
+    }
+    return false;
 }
 
 /**
@@ -1192,8 +1337,11 @@ export {
     convertRowsToTxt,
     detectDuplicateKeys,
     escapeCsvValue,
+    hasMeaningfulColumnStructure,
+    isUndetectableDelimiterError,
     normalizeKeyValue,
     resolveKeyField,
     sanitizeFilename,
-    sanitizeRows
+    sanitizeRows,
+    shouldRetryWithFallbackDelimiter
 };
