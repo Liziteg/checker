@@ -410,36 +410,61 @@ function parseDelimitedFileChunked(file, delimiter) {
         const aggregatedRows = [];
         const aggregatedErrors = [];
         let fatalError = null;
+        let lastChunkMeta = null;
+        let abortedDueToUndetectableDelimiter = false;
+
+        const workerSupported = typeof Worker !== 'undefined';
 
         Papa.parse(file, {
             header: true,
             skipEmptyLines: 'greedy',
             encoding: 'utf-8',
             dynamicTyping: false,
-            worker: true,
+            worker: workerSupported,
             chunkSize: PAPA_PARSE_CHUNK_SIZE,
             delimiter,
             chunk: (results, parser) => {
-                if (Array.isArray(results.errors) && results.errors.length > 0) {
-                    aggregatedErrors.push(...results.errors);
-                    const blocking = results.errors.find((error) => error && error.fatal);
+                const chunkErrors = Array.isArray(results.errors) ? results.errors : [];
+                if (chunkErrors.length > 0) {
+                    aggregatedErrors.push(...chunkErrors);
+                    const blocking = chunkErrors.find((error) => error && error.fatal);
                     if (blocking && !fatalError) {
                         fatalError = blocking;
-                        parser.abort();
                     }
                 }
+
                 if (Array.isArray(results.data) && results.data.length > 0) {
                     const sanitized = sanitizeRows(results.data);
                     for (const row of sanitized) {
                         aggregatedRows.push(row);
                     }
                 }
+
                 if (Array.isArray(results.data)) {
                     results.data.length = 0;
+                }
+
+                if (results && results.meta) {
+                    lastChunkMeta = results.meta;
+                }
+
+                if (fatalError) {
+                    parser.abort();
+                    return;
+                }
+
+                if (!delimiter && chunkErrors.some((error) => isUndetectableDelimiterError(error))) {
+                    if (!abortedDueToUndetectableDelimiter) {
+                        abortedDueToUndetectableDelimiter = true;
+                        parser.abort();
+                    }
                 }
             },
             complete: (results) => {
                 const combinedErrors = aggregatedErrors.concat(Array.isArray(results?.errors) ? results.errors : []);
+                const resolvedMeta = results?.meta && Object.keys(results.meta).length > 0
+                    ? results.meta
+                    : lastChunkMeta ?? {};
                 if (fatalError) {
                     reject(new Error(`Ошибка разбора файла ${file.name}: ${fatalError.message}`));
                     return;
@@ -447,7 +472,7 @@ function parseDelimitedFileChunked(file, delimiter) {
                 resolve({
                     rows: aggregatedRows,
                     errors: combinedErrors,
-                    meta: results?.meta ?? {}
+                    meta: resolvedMeta
                 });
             },
             error: (error) => {
